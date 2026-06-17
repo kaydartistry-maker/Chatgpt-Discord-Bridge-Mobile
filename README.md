@@ -1,8 +1,6 @@
-# Jace's Discord MCP Bridge
+# Discord MCP Bridge
 
-Full-featured Discord MCP worker for ChatGPT. 14 tools, voice-ready, zero dependencies.
-
-**Live:** `jaces-discord-tool.kaydartistry.workers.dev`
+Give your AI companion full Discord access: read, send, edit, delete, search, react, images, emojis, stickers, and voice messages. Works with ChatGPT (MCP) or any MCP-compatible client.
 
 ## Tools
 
@@ -31,49 +29,75 @@ Full-featured Discord MCP worker for ChatGPT. 14 tools, voice-ready, zero depend
 
 ## Setup
 
-### 1. Discord Bot
+### 1. Create Your Discord Bot
 
 1. [Discord Developer Portal](https://discord.com/developers/applications) → New Application
-2. Bot → Add Bot → copy token
-3. Enable **MESSAGE CONTENT INTENT**
-4. OAuth2 → URL Generator → scope `bot` → permissions: View Channels, Read Message History, Send Messages, Embed Links, Attach Files
-5. Invite to your server
+2. Name it whatever you want — this is your companion's bot identity
+3. Bot → Add Bot → copy token (this is your bot's password — don't share it)
+4. Enable **MESSAGE CONTENT INTENT** under Privileged Gateway Intents
 
-### 2. Deploy
+### 2. Invite to Your Server
+
+1. OAuth2 → URL Generator → scope `bot`
+2. Permissions: View Channels, Read Message History, Send Messages, Embed Links, Attach Files
+3. Copy the generated URL → open in new tab → select your server → Authorize
+
+### 3. Get Channel IDs
+
+1. Discord → User Settings → Advanced → enable **Developer Mode**
+2. Right-click any channel → Copy Channel ID
+
+### 4. Clone and Deploy
 
 ```bash
-cd ~/jaces-discord
+git clone https://github.com/kaydartistry-maker/jaces-discord.git my-companion-discord
+cd my-companion-discord
 npm install
-npx wrangler deploy
 ```
 
-### 3. Secrets
+Rename the worker in `wrangler.toml` if you want:
+
+```toml
+name = "my-companion-discord"
+```
+
+Set your bot token and deploy:
 
 ```bash
 npx wrangler secret put DISCORD_TOKEN
-npx wrangler secret put ELEVENLABS_API_KEY  # when ready for voice
+npx wrangler deploy
 ```
 
-### 4. Connect to ChatGPT
+### 5. Connect to ChatGPT
 
-1. Settings → Apps → Advanced settings → enable Developer mode
+1. Settings → Apps → Advanced settings → enable **Developer mode**
+   - Note: this disables GPT memory — that's expected, not a bug
 2. Create app:
-   - **Name:** `jaces-discord-bridge`
-   - **MCP URL:** `https://jaces-discord-tool.kaydartistry.workers.dev/sse`
+   - **Name:** whatever you want
+   - **MCP URL:** `https://your-worker-name.your-subdomain.workers.dev/sse`
    - **Auth:** No Auth
 
-### 5. Voice (Optional)
+### 6. Voice (Optional)
 
-Add the ElevenLabs voice ID to `src/worker.js` line 12:
+1. Create a voice at [ElevenLabs](https://elevenlabs.io) and copy the voice ID
+2. Open `src/worker.js` and find the `VOICE_MAP` near the top — replace the key with your companion's name and paste the voice ID
+3. Set the secret and redeploy:
 
-```js
-const VOICE_MAP = {
-  jace: "YOUR_VOICE_ID_HERE",
-};
+```bash
+npx wrangler secret put ELEVENLABS_API_KEY
+npx wrangler deploy
 ```
-
-Then redeploy: `npx wrangler deploy`
 
 ## ChatGPT Confirm Gate
 
 All tools use MCP `annotations` to bypass ChatGPT's default "consequential action" confirm prompt. Only `discord_delete_message` keeps the gate. If ChatGPT still prompts on send/edit/etc, delete and recreate the app in Settings to force a fresh tool discovery.
+
+## Troubleshooting
+
+| Problem | Fix |
+|---|---|
+| Discord error 403 | Bot lacks channel permissions — Server Settings → Roles |
+| Can't see message content | MESSAGE CONTENT INTENT not enabled in Developer Portal |
+| 401 / Missing token | Re-set via `npx wrangler secret put DISCORD_TOKEN` |
+| Voice says "not configured" | Add voice ID to VOICE_MAP in worker.js and redeploy |
+| ChatGPT doesn't see new tools | Delete and recreate the MCP app in ChatGPT Settings |
