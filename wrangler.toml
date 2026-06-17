@@ -1,0 +1,7 @@
+name = "jaces-discord-tool"
+main = "src/worker.js"
+compatibility_date = "2024-09-23"
+
+[vars]
+# DISCORD_TOKEN - set via `wrangler secret put DISCORD_TOKEN`
+# ELEVENLABS_API_KEY - set via `wrangler secret put ELEVENLABS_API_KEY`
